@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Farm Meat Marketplace",
+    "slug": "farm-meat-marketplace",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "scheme": "farmmeatmarketplace",
+    "plugins": [
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.farmmeatmarketplace"
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.farmmeatmarketplace.app",
+      "versionCode": 1
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b96fb73e-0118-4f56-9d6d-79a06f63b7ad"
+      }
+    },
+    "owner": "cchoate09"
+  }
+}

@@ -1,0 +1,102 @@
+import React from "react";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ListingFilters, MeatCategory, MeatCut } from "../types";
+import { colors, spacing } from "../theme";
+import { SectionCard } from "./SectionCard";
+import { TogglePill } from "./TogglePill";
+
+const categories: Array<MeatCategory | "all"> = ["all", "beef", "pork", "chicken", "lamb", "turkey", "goat"];
+const cuts: Array<MeatCut | "all"> = [
+  "all",
+  "ribeye",
+  "ground beef",
+  "brisket",
+  "pork chops",
+  "bacon",
+  "whole chicken",
+  "chicken breast",
+  "lamb chops",
+  "turkey breast",
+  "goat stew meat"
+];
+
+export function FilterPanel({
+  filters,
+  onChange
+}: {
+  filters: ListingFilters;
+  onChange: (filters: ListingFilters) => void;
+}) {
+  return (
+    <SectionCard>
+      <Text style={styles.label}>Delivery</Text>
+      <View style={styles.row}>
+        {["all", "pickup", "shipping"].map((method) => (
+          <TogglePill
+            key={method}
+            label={method}
+            selected={filters.deliveryMethod === method}
+            onPress={() => onChange({ ...filters, deliveryMethod: method as ListingFilters["deliveryMethod"] })}
+          />
+        ))}
+      </View>
+
+      <Text style={styles.label}>Category</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
+        {categories.map((category) => (
+          <TogglePill
+            key={category}
+            label={category}
+            selected={filters.category === category}
+            onPress={() => onChange({ ...filters, category })}
+          />
+        ))}
+      </ScrollView>
+
+      <Text style={styles.label}>Cut</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
+        {cuts.map((cut) => (
+          <TogglePill
+            key={cut}
+            label={cut}
+            selected={filters.cut === cut}
+            onPress={() => onChange({ ...filters, cut })}
+          />
+        ))}
+      </ScrollView>
+
+      <Text style={styles.label}>Pickup radius (miles)</Text>
+      <TextInput
+        keyboardType="numeric"
+        value={String(filters.maxRadiusMiles)}
+        onChangeText={(text) => onChange({ ...filters, maxRadiusMiles: Number(text) || 0 })}
+        style={styles.input}
+      />
+    </SectionCard>
+  );
+}
+
+const styles = StyleSheet.create({
+  label: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700"
+  },
+  row: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    flexWrap: "wrap"
+  },
+  scrollRow: {
+    gap: spacing.sm
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: colors.text
+  }
+});

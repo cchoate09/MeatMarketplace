@@ -1,0 +1,15 @@
+.DS_Store
+Thumbs.db
+
+.expo/
+.eas-home/
+.npm-cache/
+.tools/
+node_modules/
+
+*.log
+expo.err.log
+expo.out.log
+
+.env
+apps/farm-meat-marketplace/.env
