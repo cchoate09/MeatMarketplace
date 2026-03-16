@@ -1,17 +1,25 @@
 import { Listing, NotificationItem, Order, User } from "../types";
 
+function isoOffset(hoursOffset: number) {
+  return new Date(Date.now() + hoursOffset * 60 * 60 * 1000).toISOString();
+}
+
 export const mockUsers: User[] = [
   {
-    id: "customer-1",
-    name: "Jordan Carter",
-    email: "customer@example.com",
-    role: "customer",
+    id: "slaughterhouse-1",
+    name: "North Country Meats",
+    email: "slaughterhouse@example.com",
+    role: "slaughterhouse",
     locationLabel: "Burlington, VT",
-    favorites: ["listing-1"],
+    favorites: ["listing-1", "listing-3"],
     customerProfile: {
+      facilityName: "North Country Meats",
+      buyerCode: "NCM-441",
+      inspectionRegions: ["VT", "NY", "NH"],
+      procurementNotes: "Interested in finished cattle lots with fast pickup windows.",
       savedAddress: {
-        label: "Home",
-        street: "123 Maple Street",
+        label: "Plant",
+        street: "87 Industrial Lane",
         city: "Burlington",
         state: "VT",
         postalCode: "05401"
@@ -25,6 +33,60 @@ export const mockUsers: User[] = [
           isDefault: true,
           processorReference: "pm_mock_4242"
         }
+      ],
+      strategies: [
+        {
+          listingId: "listing-1",
+          mode: "auto",
+          maxBid: 7.8,
+          increment: 0.1,
+          updatedAt: isoOffset(-2.5)
+        },
+        {
+          listingId: "listing-3",
+          mode: "manual",
+          maxBid: 3.1,
+          increment: 0.05,
+          updatedAt: isoOffset(-0.75)
+        }
+      ]
+    }
+  },
+  {
+    id: "slaughterhouse-2",
+    name: "Empire Harvest Processing",
+    email: "processor@example.com",
+    role: "slaughterhouse",
+    locationLabel: "Rutland, VT",
+    favorites: ["listing-1", "listing-2"],
+    customerProfile: {
+      facilityName: "Empire Harvest Processing",
+      buyerCode: "EHP-212",
+      inspectionRegions: ["VT", "NY", "MA"],
+      procurementNotes: "Strong on hog lots and mixed freezer beef contracts.",
+      savedAddress: {
+        label: "Main Plant",
+        street: "500 Packing House Road",
+        city: "Rutland",
+        state: "VT",
+        postalCode: "05701"
+      },
+      paymentMethods: [],
+      strategies: [
+        {
+          listingId: "listing-1",
+          mode: "auto",
+          maxBid: 7.6,
+          increment: 0.1,
+          updatedAt: isoOffset(-2.75)
+        },
+        {
+          listingId: "listing-2",
+          mode: "manual",
+          maxBid: 5.6,
+          increment: 0.1,
+          updatedAt: isoOffset(-1.5)
+        }
       ]
     }
   },
@@ -33,22 +95,22 @@ export const mockUsers: User[] = [
     name: "Maple Ridge Farm",
     email: "farmer@example.com",
     role: "farmer",
-    locationLabel: "Montpelier, VT",
+    locationLabel: "Shelburne, VT",
     favorites: [],
     farmProfile: {
       farmName: "Maple Ridge Farm",
-      story: "A family farm focused on pasture-raised livestock, transparent practices, and direct relationships with our buyers.",
-      practices: ["Pasture-raised", "No routine antibiotics", "Dry-aged beef"],
+      story: "A family livestock operation focused on transparent, pasture-based finishing and direct processor relationships.",
+      practices: ["Pasture-raised", "No routine antibiotics", "Consistent lot records"],
       certifications: ["Animal Welfare Approved", "State inspected"],
       contactEmail: "hello@mapleridgefarm.example",
       contactPhone: "(802) 555-0144",
-      pickupAddress: "88 County Road, Montpelier, VT 05602",
+      pickupAddress: "88 County Road, Shelburne, VT 05482",
       verified: true
     },
     farmerOnboarding: {
       legalName: "Maple Ridge Farm LLC",
       identityVerified: true,
-      payoutAccountLabel: "Bank account ending in 1221",
+      payoutAccountLabel: "Operating account ending in 1221",
       payoutReady: true
     }
   }
@@ -59,52 +121,66 @@ export const mockListings: Listing[] = [
     id: "listing-1",
     farmerId: "farmer-1",
     farmerName: "Maple Ridge Farm",
-    title: "Grass-Fed Ribeye Steaks",
-    description: "Dry-aged ribeyes from pasture-raised cattle, vacuum sealed and frozen.",
+    title: "Spring Angus Beef Lot",
+    description: "Finished Angus-cross cattle offered as a live auction lot with clean weight sheets and a tight pickup window.",
     category: "beef",
     cut: "ribeye",
-    price: 24,
-    unit: "lb",
-    quantityAvailable: 18,
-    lowStockThreshold: 5,
-    pickupAvailable: true,
-    shippingAvailable: true,
-    shippingFee: 18,
-    locationName: "Montpelier, VT",
-    distanceMiles: 22,
-    availableOn: "2026-03-18",
-    processingDays: 2,
-    pickupInstructions: "Pickup Fridays from 2-6 PM at the farm store.",
-    pickupSlots: [
+    unit: "lb hanging weight",
+    locationName: "Shelburne, VT",
+    distanceMiles: 18,
+    imageLabel: "Beef Lot",
+    imageGallery: ["Pasture lot", "Weight sheet", "Handling lane"],
+    breed: "Angus cross",
+    tags: ["finished cattle", "consistent weights", "pasture raised"],
+    reviews: [],
+    totalWeightLbs: 4800,
+    headCount: 8,
+    reservePrice: 7.2,
+    openingBid: 6.8,
+    currentBid: 7.7,
+    minimumIncrement: 0.1,
+    auctionStartAt: isoOffset(-4),
+    auctionEndAt: isoOffset(20),
+    auctionStatus: "live",
+    reserveMet: true,
+    currentLeaderId: "slaughterhouse-1",
+    currentLeaderName: "North Country Meats",
+    winningBidId: "bid-3",
+    qualityGrade: "Choice target finish",
+    packagingDetails: "Live lot sale, farm records and weights provided.",
+    handlingDetails: "Processor pickup required within 48 hours of award.",
+    estimatedYieldPercent: 61,
+    paymentTerms: "25% deposit within 24 hours, remainder on verified scale ticket.",
+    allowAutoBids: true,
+    bids: [
       {
-        id: "slot-1",
-        label: "Friday 2:00 PM - 4:00 PM",
-        startAt: "2026-03-20T14:00:00-04:00",
-        endAt: "2026-03-20T16:00:00-04:00"
+        id: "bid-1",
+        listingId: "listing-1",
+        slaughterhouseId: "slaughterhouse-2",
+        slaughterhouseName: "Empire Harvest Processing",
+        amount: 7.3,
+        createdAt: isoOffset(-3),
+        mode: "manual"
       },
       {
-        id: "slot-2",
-        label: "Friday 4:00 PM - 6:00 PM",
-        startAt: "2026-03-20T16:00:00-04:00",
-        endAt: "2026-03-20T18:00:00-04:00"
-      }
-    ],
-    shippingRegions: ["VT", "NH", "NY"],
-    minimumOrder: 2,
-    imageLabel: "Ribeye",
-    imageGallery: ["Front cut photo", "Packaged steaks", "Grill finish"],
-    breed: "Angus cross",
-    packagingDetails: "Vacuum sealed in 2-steak packs.",
-    storageDetails: "Keep frozen. Best used within 10 months.",
-    cookingTip: "Reverse sear for best crust and even doneness.",
-    tags: ["grass-fed", "dry-aged", "vacuum sealed"],
-    reviews: [
+        id: "bid-2",
+        listingId: "listing-1",
+        slaughterhouseId: "slaughterhouse-2",
+        slaughterhouseName: "Empire Harvest Processing",
+        amount: 7.6,
+        createdAt: isoOffset(-2.75),
+        mode: "auto",
+        maxBid: 7.6
+      },
       {
-        id: "review-1",
-        customerName: "Alex",
-        rating: 5,
-        comment: "Excellent marbling and very fresh.",
-        createdAt: "2026-03-01"
+        id: "bid-3",
+        listingId: "listing-1",
+        slaughterhouseId: "slaughterhouse-1",
+        slaughterhouseName: "North Country Meats",
+        amount: 7.7,
+        createdAt: isoOffset(-2.5),
+        mode: "auto",
+        maxBid: 7.8
       }
     ]
   },
@@ -112,125 +188,176 @@ export const mockListings: Listing[] = [
     id: "listing-2",
     farmerId: "farmer-1",
     farmerName: "Maple Ridge Farm",
-    title: "Pasture-Raised Pork Chops",
-    description: "Bone-in chops from heritage hogs with pickup or regional shipping.",
+    title: "Heritage Hog Group",
+    description: "Uniform Berkshire hog group with farm-side weights and a same-day loading window included.",
     category: "pork",
     cut: "pork chops",
-    price: 14,
-    unit: "lb",
-    quantityAvailable: 30,
-    lowStockThreshold: 6,
-    pickupAvailable: true,
-    shippingAvailable: false,
-    shippingFee: 0,
-    locationName: "Montpelier, VT",
-    distanceMiles: 22,
-    availableOn: "2026-03-16",
-    processingDays: 1,
-    pickupInstructions: "Message the farm to confirm a pickup window.",
-    pickupSlots: [
-      {
-        id: "slot-3",
-        label: "Saturday 9:00 AM - 11:00 AM",
-        startAt: "2026-03-21T09:00:00-04:00",
-        endAt: "2026-03-21T11:00:00-04:00"
-      }
-    ],
-    shippingRegions: [],
-    imageLabel: "Pork",
-    imageGallery: ["Pork chop tray", "Freezer-ready pack"],
+    unit: "lb live weight",
+    locationName: "Charlotte, VT",
+    distanceMiles: 27,
+    imageLabel: "Hogs",
+    imageGallery: ["Pen overview", "Weight summary"],
     breed: "Berkshire",
-    packagingDetails: "2 chops per pack, frozen.",
-    storageDetails: "Keep frozen. Thaw in refrigerator overnight.",
-    cookingTip: "Brine briefly before pan searing.",
-    tags: ["heritage breed", "bone-in"],
-    reviews: []
+    tags: ["heritage hogs", "processor ready"],
+    reviews: [],
+    totalWeightLbs: 2550,
+    headCount: 15,
+    reservePrice: 5.2,
+    openingBid: 4.8,
+    currentBid: 5.4,
+    minimumIncrement: 0.1,
+    auctionStartAt: isoOffset(-2),
+    auctionEndAt: isoOffset(8),
+    auctionStatus: "live",
+    reserveMet: true,
+    currentLeaderId: "slaughterhouse-2",
+    currentLeaderName: "Empire Harvest Processing",
+    winningBidId: "bid-4",
+    qualityGrade: "Market-ready heritage hogs",
+    packagingDetails: "Live lot sale with loading support.",
+    handlingDetails: "Pickup required with producer notice 12 hours ahead.",
+    estimatedYieldPercent: 72,
+    paymentTerms: "Settlement within 48 hours by ACH.",
+    allowAutoBids: true,
+    bids: [
+      {
+        id: "bid-4",
+        listingId: "listing-2",
+        slaughterhouseId: "slaughterhouse-2",
+        slaughterhouseName: "Empire Harvest Processing",
+        amount: 5.4,
+        createdAt: isoOffset(-1.5),
+        mode: "manual"
+      }
+    ]
   },
   {
     id: "listing-3",
     farmerId: "farmer-1",
     farmerName: "Maple Ridge Farm",
-    title: "Whole Chickens",
-    description: "Air-chilled birds, processed weekly and sold whole.",
+    title: "Broiler Pickup Run",
+    description: "Pasture broiler group for processor pickup with same-week slaughter slot preferred.",
     category: "chicken",
     cut: "whole chicken",
-    price: 6,
-    unit: "lb",
-    quantityAvailable: 12,
-    lowStockThreshold: 4,
-    pickupAvailable: true,
-    shippingAvailable: true,
-    shippingFee: 12,
-    locationName: "Montpelier, VT",
-    distanceMiles: 22,
-    availableOn: "2026-03-15",
-    processingDays: 3,
-    pickupInstructions: "Pickup Saturdays near the processing shed.",
-    pickupSlots: [
-      {
-        id: "slot-4",
-        label: "Saturday 10:00 AM - Noon",
-        startAt: "2026-03-21T10:00:00-04:00",
-        endAt: "2026-03-21T12:00:00-04:00"
-      }
-    ],
-    shippingRegions: ["VT", "MA", "CT"],
-    imageLabel: "Chicken",
-    imageGallery: ["Whole chicken", "Farm pickup cooler"],
+    unit: "lb live weight",
+    locationName: "Hinesburg, VT",
+    distanceMiles: 34,
+    imageLabel: "Broilers",
+    imageGallery: ["Bird group", "Loading trailer"],
     breed: "Freedom Ranger",
-    packagingDetails: "Whole birds, bagged and labeled by weight.",
-    storageDetails: "Keep refrigerated for 2 days or frozen for 9 months.",
-    cookingTip: "Dry the skin overnight for a crisp roast.",
-    tags: ["air-chilled", "pasture-raised"],
-    reviews: [
+    tags: ["broilers", "short-term run"],
+    reviews: [],
+    totalWeightLbs: 980,
+    headCount: 140,
+    reservePrice: 2.9,
+    openingBid: 2.6,
+    currentBid: 3.0,
+    minimumIncrement: 0.05,
+    auctionStartAt: isoOffset(-1),
+    auctionEndAt: isoOffset(5),
+    auctionStatus: "live",
+    reserveMet: true,
+    currentLeaderId: "slaughterhouse-1",
+    currentLeaderName: "North Country Meats",
+    winningBidId: "bid-5",
+    qualityGrade: "Pasture broilers",
+    packagingDetails: "Live bird pickup lot.",
+    handlingDetails: "Morning pickup preferred.",
+    estimatedYieldPercent: 70,
+    paymentTerms: "Full settlement within 24 hours.",
+    allowAutoBids: true,
+    bids: [
       {
-        id: "review-2",
-        customerName: "Taylor",
-        rating: 4,
-        comment: "Pickup was easy and quality was great.",
-        createdAt: "2026-02-20"
+        id: "bid-5",
+        listingId: "listing-3",
+        slaughterhouseId: "slaughterhouse-1",
+        slaughterhouseName: "North Country Meats",
+        amount: 3.0,
+        createdAt: isoOffset(-0.75),
+        mode: "manual"
       }
     ]
+  },
+  {
+    id: "listing-4",
+    farmerId: "farmer-1",
+    farmerName: "Maple Ridge Farm",
+    title: "Late-Week Lamb Lot",
+    description: "Small lamb group opening tomorrow morning for buyers that want a lighter-weight reserve test.",
+    category: "lamb",
+    cut: "lamb chops",
+    unit: "lb live weight",
+    locationName: "Starksboro, VT",
+    distanceMiles: 41,
+    imageLabel: "Lamb",
+    imageGallery: ["Barn lane", "Sorting pen"],
+    breed: "Dorset cross",
+    tags: ["scheduled", "small lot"],
+    reviews: [],
+    totalWeightLbs: 1120,
+    headCount: 14,
+    reservePrice: 4.5,
+    openingBid: 4.1,
+    currentBid: 4.1,
+    minimumIncrement: 0.05,
+    auctionStartAt: isoOffset(10),
+    auctionEndAt: isoOffset(34),
+    auctionStatus: "scheduled",
+    reserveMet: false,
+    qualityGrade: "Trim, consistent lambs",
+    packagingDetails: "Live lot sale with individual weights available.",
+    handlingDetails: "Pickup within 24 hours of award.",
+    estimatedYieldPercent: 51,
+    paymentTerms: "Settlement due next business day.",
+    allowAutoBids: true,
+    bids: []
   }
 ];
 
 export const mockOrders: Order[] = [
   {
-    id: "order-1",
-    listingId: "listing-1",
-    listingTitle: "Grass-Fed Ribeye Steaks",
+    id: "award-1",
+    listingId: "listing-0",
+    listingTitle: "Winter Finished Steer Lot",
     farmerId: "farmer-1",
     farmerName: "Maple Ridge Farm",
-    customerId: "customer-1",
-    customerName: "Jordan Carter",
-    quantity: 2,
-    deliveryMethod: "pickup",
-    pickupSlotLabel: "Friday 2:00 PM - 4:00 PM",
-    paymentMethodLabel: "Visa ending in 4242",
-    paymentIntentId: "pi_mock_confirmed",
-    subtotal: 48,
-    shippingFee: 0,
-    totalPrice: 48,
-    createdAt: "2026-03-10T09:00:00Z",
-    status: "confirmed"
+    customerId: "slaughterhouse-1",
+    customerName: "North Country Meats",
+    finalBid: 7.4,
+    reservePrice: 7.1,
+    reserveMet: true,
+    bidCount: 6,
+    totalWeightLbs: 3600,
+    paymentMethodLabel: "ACH on file",
+    paymentIntentId: "pi_mock_award_1",
+    createdAt: isoOffset(-120),
+    status: "contract_sent"
   }
 ];
 
 export const mockNotifications: NotificationItem[] = [
   {
     id: "notification-1",
-    userId: "customer-1",
-    title: "Order confirmed",
-    body: "Your ribeye order has been confirmed by Maple Ridge Farm.",
-    createdAt: "2026-03-10T09:30:00Z",
+    userId: "slaughterhouse-1",
+    title: "You are leading",
+    body: "North Country Meats is leading Spring Angus Beef Lot at $7.70/lb.",
+    createdAt: isoOffset(-2.5),
     read: false
   },
   {
     id: "notification-2",
     userId: "farmer-1",
-    title: "New order received",
-    body: "Jordan Carter placed an order for Grass-Fed Ribeye Steaks.",
-    createdAt: "2026-03-10T09:05:00Z",
+    title: "Reserve met",
+    body: "Spring Angus Beef Lot crossed reserve and is now at $7.70/lb.",
+    createdAt: isoOffset(-2.5),
+    read: false
+  },
+  {
+    id: "notification-3",
+    userId: "slaughterhouse-2",
+    title: "High bid recorded",
+    body: "Empire Harvest Processing is currently leading Heritage Hog Group at $5.40/lb.",
+    createdAt: isoOffset(-1.5),
     read: false
   }
 ];

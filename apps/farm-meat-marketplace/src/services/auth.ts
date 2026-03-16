@@ -90,14 +90,14 @@ export async function signUp(input: SignUpInput) {
     name: input.name,
     email,
     role: input.role,
-    location_label: input.role === "farmer" ? "Farm location pending" : "Customer location pending"
+    location_label: input.role === "farmer" ? "Farm location pending" : "Plant location pending"
   });
 
   if (profileError) {
     throw new Error(profileError.message);
   }
 
-  if (input.role === "customer") {
+  if (input.role === "slaughterhouse") {
     const { error: customerError } = await supabase.from("customer_profiles").insert({
       user_id: userId,
       saved_address: {

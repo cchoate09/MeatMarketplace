@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from "react-native";
 import { AppButton } from "./components/AppButton";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { useAppContext } from "./context/AppContext";
-import { hasStripeConfig } from "./services/payments";
 import { AuthScreen } from "./screens/AuthScreen";
 import { CustomerBrowseScreen } from "./screens/customer/CustomerBrowseScreen";
 import { CustomerOrdersScreen } from "./screens/customer/CustomerOrdersScreen";
@@ -14,12 +13,12 @@ import { FarmerProfileScreen } from "./screens/farmer/FarmerProfileScreen";
 import { FarmerSalesScreen } from "./screens/farmer/FarmerSalesScreen";
 import { colors, spacing } from "./theme";
 
-type CustomerTab = "browse" | "orders" | "profile";
-type FarmerTab = "inventory" | "newListing" | "sales" | "farm";
+type SlaughterhouseTab = "auctions" | "bids" | "profile";
+type FarmerTab = "inventory" | "newAuction" | "results" | "farm";
 
 export function RootApp() {
-  const { isHydrated, currentUser, logout, currentLocationLabel } = useAppContext();
-  const [customerTab, setCustomerTab] = useState<CustomerTab>("browse");
+  const { isHydrated, currentUser, logout, currentLocationLabel, unreadCount } = useAppContext();
+  const [slaughterhouseTab, setSlaughterhouseTab] = useState<SlaughterhouseTab>("auctions");
   const [farmerTab, setFarmerTab] = useState<FarmerTab>("inventory");
 
   if (!isHydrated) {
@@ -30,10 +29,11 @@ export function RootApp() {
     return <AuthScreen />;
   }
 
-  const customerNeedsOnboarding =
-    currentUser.role === "customer" &&
-    (!currentUser.customerProfile?.savedAddress.street ||
-      (!hasStripeConfig && !currentUser.customerProfile?.paymentMethods.length));
+  const slaughterhouseNeedsOnboarding =
+    currentUser.role === "slaughterhouse" &&
+    (!currentUser.customerProfile?.facilityName ||
+      !currentUser.customerProfile?.buyerCode ||
+      !currentUser.customerProfile?.savedAddress.street);
   const farmerNeedsOnboarding =
     currentUser.role === "farmer" && (!currentUser.farmProfile || !currentUser.farmerOnboarding?.payoutReady);
 
@@ -41,36 +41,40 @@ export function RootApp() {
     <View style={styles.screenShell}>
       <View style={styles.topBar}>
         <View style={styles.topBarCopy}>
-          <Text style={styles.topBarTitle}>{currentUser.role === "customer" ? `Welcome, ${currentUser.name}` : "Farm dashboard"}</Text>
+          <Text style={styles.topBarTitle}>
+            {currentUser.role === "slaughterhouse"
+              ? `Procurement desk: ${currentUser.customerProfile?.facilityName ?? currentUser.name}`
+              : "Farm auction desk"}
+          </Text>
           <Text style={styles.topBarSubtitle}>{currentLocationLabel}</Text>
         </View>
         <AppButton label="Log Out" kind="secondary" onPress={() => void logout()} />
       </View>
 
-      {currentUser.role === "customer" ? (
+      {currentUser.role === "slaughterhouse" ? (
         <>
           <View style={styles.tabRow}>
-            <TabButton label="Browse" active={customerTab === "browse"} onPress={() => setCustomerTab("browse")} />
-            <TabButton label="Orders" active={customerTab === "orders"} onPress={() => setCustomerTab("orders")} />
-            <TabButton label="Profile" active={customerTab === "profile"} onPress={() => setCustomerTab("profile")} />
+            <TabButton label="Auctions" active={slaughterhouseTab === "auctions"} onPress={() => setSlaughterhouseTab("auctions")} />
+            <TabButton label="Bids" active={slaughterhouseTab === "bids"} badge={unreadCount} onPress={() => setSlaughterhouseTab("bids")} />
+            <TabButton label="Profile" active={slaughterhouseTab === "profile"} onPress={() => setSlaughterhouseTab("profile")} />
           </View>
-          {customerNeedsOnboarding ? <CustomerProfileScreen /> : null}
-          {!customerNeedsOnboarding && customerTab === "browse" ? <CustomerBrowseScreen /> : null}
-          {!customerNeedsOnboarding && customerTab === "orders" ? <CustomerOrdersScreen /> : null}
-          {!customerNeedsOnboarding && customerTab === "profile" ? <CustomerProfileScreen /> : null}
+          {slaughterhouseNeedsOnboarding ? <CustomerProfileScreen /> : null}
+          {!slaughterhouseNeedsOnboarding && slaughterhouseTab === "auctions" ? <CustomerBrowseScreen /> : null}
+          {!slaughterhouseNeedsOnboarding && slaughterhouseTab === "bids" ? <CustomerOrdersScreen /> : null}
+          {!slaughterhouseNeedsOnboarding && slaughterhouseTab === "profile" ? <CustomerProfileScreen /> : null}
         </>
       ) : (
         <>
           <View style={styles.tabRow}>
             <TabButton label="Inventory" active={farmerTab === "inventory"} onPress={() => setFarmerTab("inventory")} />
-            <TabButton label="New Listing" active={farmerTab === "newListing"} onPress={() => setFarmerTab("newListing")} />
-            <TabButton label="Sales" active={farmerTab === "sales"} onPress={() => setFarmerTab("sales")} />
+            <TabButton label="New Auction" active={farmerTab === "newAuction"} onPress={() => setFarmerTab("newAuction")} />
+            <TabButton label="Results" active={farmerTab === "results"} badge={unreadCount} onPress={() => setFarmerTab("results")} />
             <TabButton label="Farm" active={farmerTab === "farm"} onPress={() => setFarmerTab("farm")} />
           </View>
           {farmerNeedsOnboarding ? <FarmerProfileScreen /> : null}
           {!farmerNeedsOnboarding && farmerTab === "inventory" ? <FarmerInventoryScreen /> : null}
-          {!farmerNeedsOnboarding && farmerTab === "newListing" ? <FarmerNewListingScreen onCreated={() => setFarmerTab("inventory")} /> : null}
-          {!farmerNeedsOnboarding && farmerTab === "sales" ? <FarmerSalesScreen /> : null}
+          {!farmerNeedsOnboarding && farmerTab === "newAuction" ? <FarmerNewListingScreen onCreated={() => setFarmerTab("inventory")} /> : null}
+          {!farmerNeedsOnboarding && farmerTab === "results" ? <FarmerSalesScreen /> : null}
           {!farmerNeedsOnboarding && farmerTab === "farm" ? <FarmerProfileScreen /> : null}
         </>
       )}
@@ -78,8 +82,27 @@ export function RootApp() {
   );
 }
 
-function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return <AppButton label={label} onPress={onPress} kind={active ? "primary" : "secondary"} style={styles.tabButton} />;
+function TabButton({
+  label,
+  active,
+  badge,
+  onPress
+}: {
+  label: string;
+  active: boolean;
+  badge?: number;
+  onPress: () => void;
+}) {
+  return (
+    <View style={styles.tabButtonWrapper}>
+      <AppButton label={label} onPress={onPress} kind={active ? "primary" : "secondary"} style={styles.tabButton} />
+      {badge != null && badge > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge > 99 ? "99+" : String(badge)}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -115,7 +138,28 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: spacing.sm
   },
+  tabButtonWrapper: {
+    flex: 1,
+    position: "relative"
+  },
   tabButton: {
     flex: 1
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: colors.danger,
+    borderRadius: 999,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4
+  },
+  badgeText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: "800"
   }
 });

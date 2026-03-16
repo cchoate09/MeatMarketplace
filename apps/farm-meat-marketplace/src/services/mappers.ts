@@ -17,7 +17,17 @@ export function mapUserRecord(
     favorites: favorites.map((entry) => entry.listing_id),
     customerProfile: customerProfile
       ? {
-          savedAddress: customerProfile.saved_address,
+          facilityName: customerProfile.facility_name ?? profile.name,
+          buyerCode: customerProfile.buyer_code ?? "",
+          inspectionRegions: customerProfile.inspection_regions ?? [],
+          procurementNotes: customerProfile.procurement_notes ?? "",
+          savedAddress: customerProfile.saved_address ?? {
+            label: "Primary",
+            street: "",
+            city: "",
+            state: "",
+            postalCode: ""
+          },
           paymentMethods: paymentAccounts
             .filter((entry) => entry.account_type === "customer")
             .map((entry) => ({
@@ -27,7 +37,8 @@ export function mapUserRecord(
               expiry: entry.expiry ?? "",
               isDefault: entry.is_default ?? false,
               processorReference: entry.processor_reference ?? undefined
-            }))
+            })),
+          strategies: []
         }
       : undefined,
     farmProfile: farm
@@ -53,7 +64,7 @@ export function mapUserRecord(
   };
 }
 
-export function mapListingRecord(record: any, images: any[] = [], slots: any[] = [], reviews: any[] = []): Listing {
+export function mapListingRecord(record: any, images: any[] = [], _slots: any[] = [], reviews: any[] = []): Listing {
   return {
     id: record.id,
     farmerId: record.farmer_id,
@@ -62,32 +73,12 @@ export function mapListingRecord(record: any, images: any[] = [], slots: any[] =
     description: record.description,
     category: record.category,
     cut: record.cut,
-    price: Number(record.price),
-    unit: record.unit,
-    quantityAvailable: record.quantity_available,
-    lowStockThreshold: record.low_stock_threshold,
-    pickupAvailable: record.pickup_available,
-    shippingAvailable: record.shipping_available,
-    shippingFee: Number(record.shipping_fee),
-    locationName: record.location_name,
+    unit: record.unit ?? "lb live weight",
+    locationName: record.location_name ?? "",
     distanceMiles: Number(record.distance_miles ?? 0),
-    availableOn: record.available_on,
-    processingDays: record.processing_days,
-    pickupInstructions: record.pickup_instructions,
-    pickupSlots: slots.map((entry) => ({
-      id: entry.id,
-      label: entry.label,
-      startAt: entry.start_at,
-      endAt: entry.end_at
-    })),
-    shippingRegions: record.shipping_regions ?? [],
-    minimumOrder: record.minimum_order ?? undefined,
-    imageLabel: record.image_label,
-    imageGallery: images.map((entry) => entry.label ?? entry.public_url ?? entry.storage_path),
-    breed: record.breed,
-    packagingDetails: record.packaging_details,
-    storageDetails: record.storage_details,
-    cookingTip: record.cooking_tip,
+    imageLabel: record.image_label ?? "Lot",
+    imageGallery: images.map((entry) => entry.label ?? entry.public_url ?? entry.storage_path).filter(Boolean),
+    breed: record.breed ?? "",
     tags: record.tags ?? [],
     reviews: reviews.map((entry) => ({
       id: entry.id,
@@ -95,7 +86,40 @@ export function mapListingRecord(record: any, images: any[] = [], slots: any[] =
       rating: entry.rating,
       comment: entry.comment,
       createdAt: entry.created_at
-    }))
+    })),
+    totalWeightLbs: Number(record.total_weight_lbs ?? record.quantity_available ?? 0),
+    headCount: Number(record.head_count ?? 0),
+    reservePrice: Number(record.reserve_price ?? record.price ?? 0),
+    openingBid: Number(record.opening_bid ?? record.price ?? 0),
+    currentBid: Number(record.current_bid ?? record.price ?? 0),
+    minimumIncrement: Number(record.minimum_increment ?? 0.1),
+    auctionStartAt: record.auction_start_at ?? record.available_on ?? new Date().toISOString(),
+    auctionEndAt: record.auction_end_at ?? new Date().toISOString(),
+    auctionStatus: record.auction_status ?? "scheduled",
+    reserveMet: Boolean(record.reserve_met),
+    currentLeaderId: record.current_leader_id ?? undefined,
+    currentLeaderName: record.current_leader_name ?? undefined,
+    winningBidId: record.winning_bid_id ?? undefined,
+    qualityGrade: record.quality_grade ?? "Processor lot",
+    packagingDetails: record.packaging_details ?? "",
+    handlingDetails: record.handling_details ?? record.pickup_instructions ?? "",
+    estimatedYieldPercent: Number(record.estimated_yield_percent ?? 0),
+    paymentTerms: record.payment_terms ?? "Settlement terms pending",
+    allowAutoBids: record.allow_auto_bids ?? true,
+    bids: [],
+    price: Number(record.price ?? 0),
+    quantityAvailable: record.quantity_available ?? undefined,
+    lowStockThreshold: record.low_stock_threshold ?? undefined,
+    pickupAvailable: record.pickup_available ?? undefined,
+    shippingAvailable: record.shipping_available ?? undefined,
+    shippingFee: Number(record.shipping_fee ?? 0),
+    availableOn: record.available_on ?? undefined,
+    processingDays: record.processing_days ?? undefined,
+    pickupInstructions: record.pickup_instructions ?? undefined,
+    shippingRegions: record.shipping_regions ?? undefined,
+    minimumOrder: record.minimum_order ?? undefined,
+    storageDetails: record.storage_details ?? undefined,
+    cookingTip: record.cooking_tip ?? undefined
   };
 }
 
@@ -108,14 +132,13 @@ export function mapOrderRecord(record: any): Order {
     farmerName: record.farmer_name,
     customerId: record.customer_id,
     customerName: record.customer_name,
-    quantity: record.quantity,
-    deliveryMethod: record.delivery_method,
-    pickupSlotLabel: record.pickup_slot_label ?? undefined,
-    paymentMethodLabel: record.payment_method_label,
+    finalBid: Number(record.final_bid ?? record.total_price ?? 0),
+    reservePrice: Number(record.reserve_price ?? 0),
+    reserveMet: Boolean(record.reserve_met ?? true),
+    bidCount: Number(record.bid_count ?? 0),
+    totalWeightLbs: Number(record.total_weight_lbs ?? record.quantity ?? 0),
+    paymentMethodLabel: record.payment_method_label ?? undefined,
     paymentIntentId: record.payment_intent_id ?? undefined,
-    subtotal: Number(record.subtotal),
-    shippingFee: Number(record.shipping_fee),
-    totalPrice: Number(record.total_price),
     createdAt: record.created_at,
     status: record.status
   };

@@ -1,13 +1,13 @@
 import { InitPaymentSheetResult, PresentPaymentSheetResult, RetrievePaymentIntentResult } from "@stripe/stripe-react-native";
 import { appConfig } from "../config/appConfig";
+import { Listing, User } from "../types";
 import { requireSupabase } from "./supabase";
-import { DeliveryMethod, Listing, User } from "../types";
 
 export interface PaymentIntentRequest {
   currentUser: User;
   listing: Listing;
-  quantity: number;
-  deliveryMethod: DeliveryMethod;
+  finalBidPerUnit: number;
+  totalWeightLbs: number;
 }
 
 export interface CompletedPayment {
@@ -53,8 +53,8 @@ interface StripeClientApi {
 export const hasStripeConfig = !appConfig.useMockServices && Boolean(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 function calculateTotals(request: PaymentIntentRequest) {
-  const subtotal = request.listing.price * request.quantity;
-  const shipping = request.deliveryMethod === "shipping" ? request.listing.shippingFee : 0;
+  const subtotal = request.finalBidPerUnit * request.totalWeightLbs;
+  const shipping = 0;
 
   return {
     subtotal,
@@ -72,7 +72,7 @@ export async function processMockPayment(request: PaymentIntentRequest) {
     shipping,
     total,
     transactionId: `txn-${Date.now()}`,
-    paymentMethodLabel: "Mock card payment"
+    paymentMethodLabel: "Mock settlement"
   };
 }
 
@@ -87,8 +87,8 @@ export async function createStripePaymentSheetSession(request: PaymentIntentRequ
       customerId: request.currentUser.id,
       customerEmail: request.currentUser.email,
       customerName: request.currentUser.name,
-      quantity: request.quantity,
-      deliveryMethod: request.deliveryMethod,
+      quantity: request.totalWeightLbs,
+      deliveryMethod: "settlement",
       subtotal,
       shipping,
       total,
@@ -152,6 +152,6 @@ export async function processStripePayment(stripe: StripeClientApi, request: Pay
     shipping,
     total,
     transactionId: paymentIntentResult.paymentIntent.id,
-    paymentMethodLabel: "Stripe PaymentSheet"
+    paymentMethodLabel: "Stripe settlement"
   };
 }

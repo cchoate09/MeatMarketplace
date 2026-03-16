@@ -13,6 +13,10 @@ React Native / Expo app scaffold for a two-sided meat marketplace connecting far
 - Real device location hook with Expo Location and a safe fallback
 - Service boundaries for auth, payments, notifications, shipping, and geocoding
 
+## Design doc
+
+- Auction marketplace design doc: `docs/auction-marketplace-design-doc.md`
+
 ## Main flows included
 
 - Farmers can log in and:
