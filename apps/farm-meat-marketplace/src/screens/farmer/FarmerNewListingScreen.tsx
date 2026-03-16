@@ -1,9 +1,21 @@
+/**
+ * FarmerNewListingScreen — create and publish a new auction lot.
+ *
+ * Image picker: requires expo-image-picker.
+ * Install with: npx expo install expo-image-picker
+ * Then add "expo-image-picker" to the plugins array in app.json and
+ * request media-library permissions in your app config.
+ */
 import React, { useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native";
+import { Alert, Image, ScrollView, Text, TextInput, View } from "react-native";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — expo-image-picker is an optional peer dependency. Install with: npx expo install expo-image-picker
+import * as ImagePicker from "expo-image-picker";
 import { AppButton } from "../../components/AppButton";
 import { ScreenShell } from "../../components/ScreenShell";
 import { SectionCard } from "../../components/SectionCard";
 import { useAppContext } from "../../context/AppContext";
+import { uploadListingImage } from "../../services/mediaService";
 import { MeatCategory, MeatCut } from "../../types";
 import { styles } from "../sharedStyles";
 
@@ -27,95 +39,113 @@ export function FarmerNewListingScreen({ onCreated }: { onCreated: () => void })
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<MeatCategory>("beef");
   const [cut, setCut] = useState<MeatCut>("ribeye");
-  const [price, setPrice] = useState("");
-  const [quantityAvailable, setQuantityAvailable] = useState("");
-  const [lowStockThreshold, setLowStockThreshold] = useState("5");
-  const [pickupAvailable, setPickupAvailable] = useState(true);
-  const [shippingAvailable, setShippingAvailable] = useState(false);
-  const [shippingFee, setShippingFee] = useState("0");
-  const [availableOn, setAvailableOn] = useState("2026-03-21");
-  const [processingDays, setProcessingDays] = useState("2");
-  const [pickupInstructions, setPickupInstructions] = useState("Pickup Saturdays from 9 AM to noon.");
-  const [pickupSlots, setPickupSlots] = useState("Saturday 9:00 AM - 11:00 AM,Saturday 11:00 AM - 1:00 PM");
-  const [shippingRegions, setShippingRegions] = useState("VT,NH,NY");
-  const [imageGallery, setImageGallery] = useState("Front cut photo,Packaged order,Farm pickup");
+  const [totalWeightLbs, setTotalWeightLbs] = useState("");
+  const [headCount, setHeadCount] = useState("1");
+  const [openingBid, setOpeningBid] = useState("");
+  const [reservePrice, setReservePrice] = useState("");
+  const [minimumIncrement, setMinimumIncrement] = useState("0.05");
+  const [auctionLengthHours, setAuctionLengthHours] = useState("24");
+  const [imageUris, setImageUris] = useState<string[]>([]);
   const [breed, setBreed] = useState("Angus cross");
-  const [packagingDetails, setPackagingDetails] = useState("Vacuum sealed.");
-  const [storageDetails, setStorageDetails] = useState("Keep frozen.");
-  const [cookingTip, setCookingTip] = useState("Sear over high heat.");
+  const [qualityGrade, setQualityGrade] = useState("Choice");
+  const [packagingDetails, setPackagingDetails] = useState("Harvest-ready loadout, boxed and labeled by lot.");
+  const [handlingDetails, setHandlingDetails] = useState("Pickup with refrigerated trailer and appointment confirmation.");
+  const [estimatedYieldPercent, setEstimatedYieldPercent] = useState("62");
+  const [paymentTerms, setPaymentTerms] = useState("Settlement due within 2 business days of award.");
+  const [allowAutoBids, setAllowAutoBids] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
-  function submitListing() {
-    if (!currentUser) {
-      return;
+  async function pickImages() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setImageUris((prev) => [...prev, ...result.assets.map((a: { uri: string }) => a.uri)]);
+      }
+    } catch {
+      Alert.alert("Image picker unavailable", "Install expo-image-picker (npx expo install expo-image-picker) to enable photo uploads.");
     }
+  }
+
+  function removeImage(uri: string) {
+    setImageUris((prev) => prev.filter((u) => u !== uri));
+  }
+
+  async function submitListing() {
+    if (!currentUser) return;
 
     try {
-      createListing({
+      setIsUploading(imageUris.length > 0);
+      const startAt = new Date();
+      const endAt = new Date(startAt.getTime() + (Number(auctionLengthHours) || 24) * 60 * 60 * 1000);
+      const tempListingId = `listing-${Date.now()}`;
+
+      // Upload picked images and collect public URLs.
+      const uploadedUrls: string[] = [];
+      for (const uri of imageUris) {
+        const filename = uri.split("/").pop() ?? `photo-${Date.now()}.jpg`;
+        const result = await uploadListingImage(tempListingId, uri, filename);
+        uploadedUrls.push(result.publicUrl);
+      }
+
+      setIsUploading(false);
+
+      await createListing({
         farmerId: currentUser.id,
         farmerName: currentUser.farmProfile?.farmName ?? currentUser.name,
         title,
         description,
         category,
         cut,
-        price: Number(price),
         unit: "lb",
-        quantityAvailable: Number(quantityAvailable),
-        lowStockThreshold: Number(lowStockThreshold),
-        pickupAvailable,
-        shippingAvailable,
-        shippingFee: Number(shippingFee) || 0,
         locationName: currentUser.locationLabel,
         distanceMiles: 0,
-        availableOn,
-        processingDays: Number(processingDays) || 0,
-        pickupInstructions,
-        pickupSlots: pickupSlots
-          .split(",")
-          .map((entry) => entry.trim())
-          .filter(Boolean)
-          .map((entry, index) => ({
-            id: `slot-${Date.now()}-${index}`,
-            label: entry,
-            startAt: new Date().toISOString(),
-            endAt: new Date().toISOString()
-          })),
-        shippingRegions: shippingRegions
-          .split(",")
-          .map((entry) => entry.trim())
-          .filter(Boolean),
         imageLabel: category.toUpperCase(),
-        imageGallery: imageGallery
-          .split(",")
-          .map((entry) => entry.trim())
-          .filter(Boolean),
+        imageGallery: uploadedUrls.length > 0 ? uploadedUrls : ["Photo pending"],
         breed,
+        tags: ["auction lot", qualityGrade.toLowerCase()],
+        totalWeightLbs: Number(totalWeightLbs) || 0,
+        headCount: Number(headCount) || 1,
+        reservePrice: Number(reservePrice) || 0,
+        openingBid: Number(openingBid) || 0,
+        minimumIncrement: Number(minimumIncrement) || 0.05,
+        auctionStartAt: startAt.toISOString(),
+        auctionEndAt: endAt.toISOString(),
+        qualityGrade,
         packagingDetails,
-        storageDetails,
-        cookingTip,
-        tags: ["new listing"]
+        handlingDetails,
+        estimatedYieldPercent: Number(estimatedYieldPercent) || 0,
+        paymentTerms,
+        allowAutoBids
       });
 
       setTitle("");
       setDescription("");
-      setPrice("");
-      setQuantityAvailable("");
-      Alert.alert("Listing posted", "Your offering has been added to the marketplace.");
+      setTotalWeightLbs("");
+      setOpeningBid("");
+      setReservePrice("");
+      setImageUris([]);
+      Alert.alert("Auction posted", "Your lot has been added to the auction board.");
       onCreated();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      Alert.alert("Unable to publish", message);
+      setIsUploading(false);
+      Alert.alert("Unable to publish", error instanceof Error ? error.message : "Unknown error");
     }
   }
 
   return (
-    <ScreenShell title="Post a new offering" subtitle="Add richer product details, pickup slots, and low-stock protection.">
+    <ScreenShell title="Post a new auction" subtitle="List a lot, set your reserve, and let slaughterhouses compete for the best price.">
       <SectionCard>
-        <TextInput value={title} onChangeText={setTitle} style={styles.input} placeholder="Listing title" />
+        <TextInput value={title} onChangeText={setTitle} style={styles.input} placeholder="Auction title" />
         <TextInput
           value={description}
           onChangeText={setDescription}
           style={[styles.input, styles.multiline]}
-          placeholder="Description, farm practices, packaging, etc."
+          placeholder="Lot description, handling notes, grade targets, and anything buyers should know"
           multiline
         />
         <Text style={styles.label}>Category</Text>
@@ -131,60 +161,48 @@ export function FarmerNewListingScreen({ onCreated }: { onCreated: () => void })
           ))}
         </View>
         <View style={styles.row}>
-          <TextInput value={price} onChangeText={setPrice} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Price per lb" />
-          <TextInput
-            value={quantityAvailable}
-            onChangeText={setQuantityAvailable}
-            keyboardType="numeric"
-            style={[styles.input, styles.flexButton]}
-            placeholder="Quantity"
-          />
+          <TextInput value={totalWeightLbs} onChangeText={setTotalWeightLbs} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Total weight (lb)" />
+          <TextInput value={headCount} onChangeText={setHeadCount} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Head count" />
         </View>
-        <TextInput
-          value={lowStockThreshold}
-          onChangeText={setLowStockThreshold}
-          keyboardType="numeric"
-          style={styles.input}
-          placeholder="Low-stock threshold"
-        />
-        <TextInput value={availableOn} onChangeText={setAvailableOn} style={styles.input} placeholder="Available on (YYYY-MM-DD)" />
-        <TextInput
-          value={processingDays}
-          onChangeText={setProcessingDays}
-          keyboardType="numeric"
-          style={styles.input}
-          placeholder="Processing time in days"
-        />
-        <TextInput value={breed} onChangeText={setBreed} style={styles.input} placeholder="Breed or variety" />
-        <TextInput value={packagingDetails} onChangeText={setPackagingDetails} style={styles.input} placeholder="Packaging details" />
-        <TextInput value={storageDetails} onChangeText={setStorageDetails} style={styles.input} placeholder="Storage details" />
-        <TextInput value={cookingTip} onChangeText={setCookingTip} style={styles.input} placeholder="Cooking tip" />
-        <TextInput value={imageGallery} onChangeText={setImageGallery} style={styles.input} placeholder="Photo labels, comma-separated" />
-        <TextInput
-          value={pickupInstructions}
-          onChangeText={setPickupInstructions}
-          style={[styles.input, styles.multiline]}
-          placeholder="Pickup instructions"
-          multiline
-        />
-        <TextInput value={pickupSlots} onChangeText={setPickupSlots} style={styles.input} placeholder="Pickup slots, comma-separated" />
-        <TextInput value={shippingRegions} onChangeText={setShippingRegions} style={styles.input} placeholder="Shipping regions, comma-separated" />
         <View style={styles.row}>
-          <AppButton
-            label={pickupAvailable ? "Pickup On" : "Pickup Off"}
-            kind={pickupAvailable ? "primary" : "secondary"}
-            onPress={() => setPickupAvailable((current) => !current)}
-            style={styles.flexButton}
-          />
-          <AppButton
-            label={shippingAvailable ? "Shipping On" : "Shipping Off"}
-            kind={shippingAvailable ? "primary" : "secondary"}
-            onPress={() => setShippingAvailable((current) => !current)}
-            style={styles.flexButton}
-          />
+          <TextInput value={openingBid} onChangeText={setOpeningBid} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Opening bid / lb" />
+          <TextInput value={reservePrice} onChangeText={setReservePrice} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Reserve / lb" />
         </View>
-        <TextInput value={shippingFee} onChangeText={setShippingFee} keyboardType="numeric" style={styles.input} placeholder="Shipping fee" />
-        <AppButton label="Publish Listing" onPress={submitListing} />
+        <View style={styles.row}>
+          <TextInput value={minimumIncrement} onChangeText={setMinimumIncrement} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Minimum increment" />
+          <TextInput value={auctionLengthHours} onChangeText={setAuctionLengthHours} keyboardType="numeric" style={[styles.input, styles.flexButton]} placeholder="Auction length (hours)" />
+        </View>
+        <TextInput value={breed} onChangeText={setBreed} style={styles.input} placeholder="Breed or variety" />
+        <TextInput value={qualityGrade} onChangeText={setQualityGrade} style={styles.input} placeholder="Quality grade" />
+        <TextInput value={packagingDetails} onChangeText={setPackagingDetails} style={styles.input} placeholder="Packaging details" />
+        <TextInput value={handlingDetails} onChangeText={setHandlingDetails} style={styles.input} placeholder="Handling or pickup details" />
+        <TextInput value={estimatedYieldPercent} onChangeText={setEstimatedYieldPercent} keyboardType="numeric" style={styles.input} placeholder="Estimated yield %" />
+        <TextInput value={paymentTerms} onChangeText={setPaymentTerms} style={styles.input} placeholder="Payment terms" />
+
+        <Text style={styles.label}>Lot photos</Text>
+        {imageUris.length > 0 ? (
+          <View style={styles.rowWrap}>
+            {imageUris.map((uri) => (
+              <View key={uri} style={{ alignItems: "center", gap: 4 }}>
+                <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: 10 }} />
+                <AppButton label="Remove" kind="secondary" onPress={() => removeImage(uri)} />
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <AppButton
+          label={isUploading ? "Uploading photos..." : "Add Photos"}
+          kind="secondary"
+          onPress={() => void pickImages()}
+          disabled={isUploading}
+        />
+
+        <AppButton
+          label={allowAutoBids ? "Auto-bids Allowed" : "Auto-bids Disabled"}
+          kind={allowAutoBids ? "primary" : "secondary"}
+          onPress={() => setAllowAutoBids((current) => !current)}
+        />
+        <AppButton label={isUploading ? "Publishing..." : "Publish Auction"} onPress={() => void submitListing()} disabled={isUploading} />
       </SectionCard>
     </ScreenShell>
   );

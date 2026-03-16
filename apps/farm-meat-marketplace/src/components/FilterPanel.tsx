@@ -19,6 +19,7 @@ const cuts: Array<MeatCut | "all"> = [
   "turkey breast",
   "goat stew meat"
 ];
+const auctionStatuses: Array<ListingFilters["auctionStatus"]> = ["all", "live", "scheduled", "awarded", "closed", "ending_soon"];
 
 export function FilterPanel({
   filters,
@@ -29,43 +30,33 @@ export function FilterPanel({
 }) {
   return (
     <SectionCard>
-      <Text style={styles.label}>Delivery</Text>
-      <View style={styles.row}>
-        {["all", "pickup", "shipping"].map((method) => (
+      <Text style={styles.label}>Auction status</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
+        {auctionStatuses.map((status) => (
           <TogglePill
-            key={method}
-            label={method}
-            selected={filters.deliveryMethod === method}
-            onPress={() => onChange({ ...filters, deliveryMethod: method as ListingFilters["deliveryMethod"] })}
+            key={status}
+            label={status.replace("_", " ")}
+            selected={filters.auctionStatus === status}
+            onPress={() => onChange({ ...filters, auctionStatus: status })}
           />
         ))}
-      </View>
+      </ScrollView>
 
       <Text style={styles.label}>Category</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
         {categories.map((category) => (
-          <TogglePill
-            key={category}
-            label={category}
-            selected={filters.category === category}
-            onPress={() => onChange({ ...filters, category })}
-          />
+          <TogglePill key={category} label={category} selected={filters.category === category} onPress={() => onChange({ ...filters, category })} />
         ))}
       </ScrollView>
 
       <Text style={styles.label}>Cut</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
         {cuts.map((cut) => (
-          <TogglePill
-            key={cut}
-            label={cut}
-            selected={filters.cut === cut}
-            onPress={() => onChange({ ...filters, cut })}
-          />
+          <TogglePill key={cut} label={cut} selected={filters.cut === cut} onPress={() => onChange({ ...filters, cut })} />
         ))}
       </ScrollView>
 
-      <Text style={styles.label}>Pickup radius (miles)</Text>
+      <Text style={styles.label}>Sourcing radius (miles)</Text>
       <TextInput
         keyboardType="numeric"
         value={String(filters.maxRadiusMiles)}
@@ -82,11 +73,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700"
   },
-  row: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    flexWrap: "wrap"
-  },
   scrollRow: {
     gap: spacing.sm
   },
@@ -98,5 +84,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     color: colors.text
+  },
+  row: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    flexWrap: "wrap"
   }
 });

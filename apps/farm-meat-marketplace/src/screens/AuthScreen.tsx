@@ -3,31 +3,32 @@ import { Alert, Text, TextInput, View } from "react-native";
 import { AppButton } from "../components/AppButton";
 import { ScreenShell } from "../components/ScreenShell";
 import { SectionCard } from "../components/SectionCard";
-import { useAppContext } from "../context/AppContext";
 import { appConfig } from "../config/appConfig";
+import { useAppContext } from "../context/AppContext";
 import { UserRole } from "../types";
 import { styles } from "./sharedStyles";
 
 export function AuthScreen() {
   const { login, signUp, loginAsDemo } = useAppContext();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [role, setRole] = useState<UserRole>("customer");
+  const [role, setRole] = useState<UserRole>("slaughterhouse");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState(role === "customer" ? "customer@example.com" : "farmer@example.com");
+  const [email, setEmail] = useState("slaughterhouse@example.com");
   const [password, setPassword] = useState("password123");
 
   async function handleSubmit() {
     try {
       if (mode === "signin") {
         await login(email.trim(), password);
-      } else {
-        await signUp({
-          name: name.trim() || (role === "customer" ? "New Customer" : "New Farm"),
-          email: email.trim(),
-          password,
-          role
-        });
+        return;
       }
+
+      await signUp({
+        name: name.trim() || (role === "slaughterhouse" ? "New Slaughterhouse" : "New Farm"),
+        email: email.trim(),
+        password,
+        role
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       Alert.alert("Unable to continue", message);
@@ -37,22 +38,22 @@ export function AuthScreen() {
   function switchRole(nextRole: UserRole) {
     setRole(nextRole);
     if (mode === "signin") {
-      setEmail(nextRole === "customer" ? "customer@example.com" : "farmer@example.com");
+      setEmail(nextRole === "slaughterhouse" ? "slaughterhouse@example.com" : "farmer@example.com");
       setPassword("password123");
     }
   }
 
   return (
     <ScreenShell
-      title="Buy and sell local meat with pickup or shipping."
+      title="Auction livestock and meat lots between farms and slaughterhouses."
       subtitle={
         appConfig.useMockServices
-          ? "Mock marketplace mode is enabled for UI testing. Live Supabase and Stripe code is still wired in and can be re-enabled later."
-          : "Supabase-ready auth, storage, and database services are wired in. Use demo accounts now or connect your live Supabase project next."
+          ? "Mock auction mode is enabled for UI testing. Live Supabase and Stripe settlement hooks are still wired in and can be re-enabled later."
+          : "Supabase-ready auth, storage, and database services are wired in. Use demo accounts now or connect your live project next."
       }
     >
       <View style={styles.heroBanner}>
-        <Text style={styles.kicker}>Farm-direct marketplace</Text>
+        <Text style={styles.kicker}>Farmer-led auction exchange</Text>
       </View>
 
       <SectionCard>
@@ -64,11 +65,16 @@ export function AuthScreen() {
 
         <Text style={styles.sectionTitle}>Role</Text>
         <View style={styles.row}>
-          <AppButton label="Customer" kind={role === "customer" ? "primary" : "secondary"} onPress={() => switchRole("customer")} style={styles.flexButton} />
+          <AppButton
+            label="Slaughterhouse"
+            kind={role === "slaughterhouse" ? "primary" : "secondary"}
+            onPress={() => switchRole("slaughterhouse")}
+            style={styles.flexButton}
+          />
           <AppButton label="Farmer" kind={role === "farmer" ? "primary" : "secondary"} onPress={() => switchRole("farmer")} style={styles.flexButton} />
         </View>
 
-        {mode === "signup" ? <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Full name or farm name" /> : null}
+        {mode === "signup" ? <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Facility or farm name" /> : null}
         <TextInput value={email} onChangeText={setEmail} style={styles.input} placeholder="Email" autoCapitalize="none" />
         <TextInput value={password} onChangeText={setPassword} style={styles.input} placeholder="Password" secureTextEntry />
         <AppButton label={mode === "signin" ? "Sign In" : "Create Account"} onPress={() => void handleSubmit()} />
@@ -76,9 +82,9 @@ export function AuthScreen() {
 
       <SectionCard>
         <Text style={styles.sectionTitle}>Demo quick access</Text>
-        <Text style={styles.paragraph}>Use these while you are still wiring Supabase keys or database tables.</Text>
-        <AppButton label="Continue as Demo Customer" kind="secondary" onPress={() => void loginAsDemo("customer")} />
-        <AppButton label="Continue as Demo Farmer" kind="secondary" onPress={() => void loginAsDemo("farmer")} />
+        <Text style={styles.paragraph}>Use these while you shape the auction workflow and backend migration.</Text>
+        <AppButton label="Demo Slaughterhouse" kind="secondary" onPress={() => void loginAsDemo("slaughterhouse")} />
+        <AppButton label="Demo Farmer" kind="secondary" onPress={() => void loginAsDemo("farmer")} />
       </SectionCard>
     </ScreenShell>
   );

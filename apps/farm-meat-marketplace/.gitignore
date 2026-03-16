@@ -1,0 +1,31 @@
+# Environment — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+# Expo
+.expo/
+dist/
+web-build/
+expo.err.log
+expo.out.log
+*.log
+
+# Dependencies
+node_modules/
+.npm-cache/
+.tools/
+
+# EAS / build artifacts
+.eas-home/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase local dev
+supabase/.temp/
